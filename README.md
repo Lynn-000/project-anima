@@ -7,6 +7,7 @@ Project-Anima is a low to zero cost, highly customizable discord chat bot, with 
 "Note: The provided Modelfile is a demo persona (Togawa Sakiko). You can freely edit the SYSTEM prompt in Modelfile to create your own Anima (e.g., a different anime character or a generic assistant)."
 
 Note that the bot replies to every message even without being mentioned with an internal cooldown of 10 seconds. Mentioning the bot/Including the bot's nickname (Customized in config.py) will refresh the cooldown.
+**You can edit the OWNER_CONTEXT in llm.py.**
 
 ## Features 核心特性
 - 🧠 **Hybrid Memory Architecture 混合记忆架构**
