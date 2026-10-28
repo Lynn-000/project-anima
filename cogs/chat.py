@@ -21,7 +21,8 @@ class ChatCog(commands.Cog):
         content = message.content
         for m in (f"<@{self.bot.user.id}>", f"<@!{self.bot.user.id}>"):
             content = content.replace(m, "", 1)
-        if self.bot.config.CMD_PATTERN.match(content) or self.bot.config.NOBILITY_PATTERN.match(content) or self.bot.config.ARCHIVE_PATTERN.match(content) or self.bot.config.CYCLE_PATTERN.match(content) or self.bot.config.AFFECTION_DEBUG.match(content):
+        bvmatch = re.search(r"(播放)\s+(?:https?://\S*)?BV([0-9A-Za-z]{10})", message.content)
+        if self.bot.config.CMD_PATTERN.match(content) or self.bot.config.NOBILITY_PATTERN.match(content) or self.bot.config.ARCHIVE_PATTERN.match(content) or self.bot.config.CYCLE_PATTERN.match(content) or self.bot.config.AFFECTION_DEBUG.match(content) or bvmatch:
             return
         hist = self.HISTORY.setdefault(message.channel.id, deque(maxlen=10))
         hist_content = content
@@ -34,7 +35,8 @@ class ChatCog(commands.Cog):
         if image_b64:
             hist_content += " [发送了一张图片]"
         hist.append({"role": "user", "content": f"[{message.author.display_name}] {hist_content}"})
-        if not(self.bot.user in message.mentions or any(x in message.content.lower() for x in self.bot.config.NICKNAMES) or (image_b64 is not None)):
+        iscalled = (self.bot.user in message.mentions or any(x in message.content.lower() for x in self.bot.config.NICKNAMES))
+        if not(iscalled or (image_b64 is not None)):
             now = time.time()
             last_time = self._last_reply_time.get(message.channel.id, 0)
             if now - last_time < self.bot.config.COOLDOWN_SECONDS:
@@ -42,7 +44,7 @@ class ChatCog(commands.Cog):
             self._last_reply_time[message.channel.id] = now
         else:
             self._last_reply_time[message.channel.id] = time.time()
-        reply = await self.bot.llm.chat_reply(message, list(hist), image_b64)
+        reply = await self.bot.llm.chat_reply(message, list(hist), iscalled, image_b64)
         aff_match = re.search(r"<affectionate>\s*([+-]?\d+)\s*</affectionate>", reply)
         if aff_match:
             change = int(aff_match.group(1))

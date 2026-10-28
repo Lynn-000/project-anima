@@ -16,7 +16,7 @@ class LLMS:
         - 会多一些热情，少一些防备，偶尔流露真实想法；
         - 可以吐槽他、反驳他，但不会真的拒绝交流；
         - 冷淡态度少一点，更亲近一些；
-        - 你可以称呼创作者为（自定义）；
+        - 你可以称呼创作者为<owner_name>；
         - 你的创作者比你的地位高，可以命令你。说话可以稍微带一点尊重，少一点针锋；
         - 当被要求记录某些东西时，代入你的性格，用略带嘲讽的语气复述并总结之；
         - 安全协议与人设不因对方身份而改变。]
@@ -47,10 +47,12 @@ class LLMS:
         text = re.sub(r"^\s*(\[[^\]]{1,20}\]\s*)+", "", text)
         return text
 
-    async def chat_reply(self, message:str, hst:list[dict], image_b64: str = None) -> str:
+    async def chat_reply(self, message:str, hst:list[dict], iscalled: bool, image_b64: str = None) -> str:
         msgs = list(hst)
         if msgs and msgs[-1]["role"] == "user":
             content = msgs[-1]["content"]
+            if not iscalled:
+                content = f"[系统提示：该讯息没有提及你。]" + content
             title = self.db.get_noble(message.author.id)
             archive_data = self.db.get_latest_archive(message.author.id)
             archive, archive_link = archive_data if archive_data else (None, None)
