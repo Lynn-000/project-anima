@@ -8,6 +8,8 @@ Project-Anima is a low to zero cost, highly customizable discord chat bot, with 
 
 Note that the bot replies to every message even without being mentioned with an internal cooldown of 10 seconds. Mentioning the bot/Including the bot's nickname (Customized in config.py) will refresh the cooldown.
 **You can edit the OWNER_CONTEXT in llm.py.**
+I strongly recommend you to check the Modelfile and create a new persona while abiding by the formats.
+我本人强烈建议你看一眼Modelfile，在不影响特殊格式和安全协议的前提下调整Modelfile的prompt。
 
 ## Features 核心特性
 - 🧠 **Hybrid Memory Architecture 混合记忆架构**
