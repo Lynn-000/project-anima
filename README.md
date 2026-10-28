@@ -124,7 +124,7 @@ Mac/Linux: Run python main.py.
 | :--- | :--- |
 | `@Bot 查好感 <@user>` | Check the bot's affection rating towards a specific user. 查询心弦对某人的好感度分数。 |
 
-**LICENSE**
+##LICENSE 
 
 This project is licensed under the GNU AGPL-3.0 License. Any derivative works or network services based on this project must be open-sourced.
 本项目基于 GNU AGPL-3.0 License 协议开源。任何基于本项目的衍生作品或网络服务必须开源。
