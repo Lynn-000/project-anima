@@ -13,9 +13,8 @@ I strongly recommend you to check the Modelfile and create a new persona while a
 
 ## Features 核心特性
 - 🧠 **Hybrid Memory Architecture 混合记忆架构**
-  - **Short-term**: Sliding window (`deque`) for contextual continuity without token overflow.
-  - **Long-term**: SQLite persistence for user profiles, titles, and historical records.
-  - 短期使用滑动窗口维持上下文连贯，长期基于 SQLite 持久化存储用户画像、头衔与历史记录。
+  - **Vector Search (sqlite-vec)**: Dynamic semantic memory retrieval using `sqlite-vec` and `nomic-embed-text`. Query rewriting extracts keywords for highly accurate KNN searches.
+  - **语义检索 (sqlite-vec)**: 基于 `sqlite-vec` 和 `nomic-embed-text` 的动态语义记忆检索，自动提取关键词进行高精度 KNN 搜索。
 
 - ❤️ **Dynamic Affection System 动态好感度系统**
   - Extracts hidden tags (e.g., `<affectionate> x </affectionate>`) to dynamically adjust the AI's attitude and tone in real-time. Features anti-farming and overflow protection.

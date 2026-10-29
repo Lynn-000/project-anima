@@ -49,6 +49,8 @@ class ManagementCog(commands.Cog):
                 if link_match:
                     link = link_match.group(1)
                     raw = re.sub(r"https?://\S+", "", raw).strip()
+                keywords = await self.bot.llm.extract_keywords(raw)
+                print(f"[DEBUG] 修史入库 - 原话: '{raw}' -> 提炼向量词: '{keywords}'")
                 HKT = timezone(timedelta(hours = 8))
                 time_str = datetime.now(HKT).strftime("%Y-%m-%d")
                 target = message.guild.get_member(int(uid))
@@ -59,7 +61,7 @@ class ManagementCog(commands.Cog):
                     await message.reply("你无权纂史。")
                     return
                 edict = await self.bot.llm.generate_edict(edict_type = "archive", target=target.mention, reason = raw)
-                self.bot.db.add_archive(uid, raw, link, time_str)
+                await self.bot.db.add_archive(uid, raw, keywords, link, time_str)
                 await message.reply(f"**诏**\n{edict}")
                 return
 async def setup(bot):

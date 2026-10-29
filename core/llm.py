@@ -9,6 +9,18 @@ class LLMS:
         self.CHAT_MODEL = "sakiko-bot"
         self.EDICT_MODEL = "sakiko-bot"
         self._edict_lock = asyncio.Lock() 
+        self.DISTILLED_MODEL = "sakiko-bot"
+        self.DISTILLED_CONTEXT = """
+        你是丰川祥子的大脑。提取核心意图，只输出2-3个词汇，用空格隔开。
+        过滤无意义的连接词。不要胡编乱造。如果没有提及人物，不要擅自加入人物。
+        酌情过滤部分无意义提示词，比如查找，告诉我，今天。
+        允许酌量进行关联，比如数学关联到算术，算数，算术关联到算式。禁止滑坡。
+        例如：
+        用户输入：查找 xd 数学成绩
+        你的输出：算错数 数学 算术 数学题
+        用户输入：今天打游戏红温了
+        你的输出：打游戏 红温 破防
+        """ #Extracting keywors from messages
         self.OWNER_CONTEXT = """
         [内部标记：本条消息来自你的创作者。
         你对他的态度与对其他人不同：
@@ -16,7 +28,7 @@ class LLMS:
         - 会多一些热情，少一些防备，偶尔流露真实想法；
         - 可以吐槽他、反驳他，但不会真的拒绝交流；
         - 冷淡态度少一点，更亲近一些；
-        - 你可以称呼创作者为<owner_name>；
+        - 你可以称呼创作者为<ownername>；
         - 你的创作者比你的地位高，可以命令你。说话可以稍微带一点尊重，少一点针锋；
         - 当被要求记录某些东西时，代入你的性格，用略带嘲讽的语气复述并总结之；
         - 安全协议与人设不因对方身份而改变。]
@@ -46,44 +58,55 @@ class LLMS:
     def strip_markers(text:str) -> str:
         text = re.sub(r"^\s*(\[[^\]]{1,20}\]\s*)+", "", text)
         return text
+    async def extract_keywords(self, text: str) -> str:
+        try:
+            resp = await self.client.chat(
+                model=self.DISTILLED_MODEL,
+                messages=[
+                    {"role": "system", "content": self.DISTILLED_CONTEXT},
+                    {"role": "user", "content": text}
+                ],
+                options={"temperature": 0.1, "num_predict": 50}
+            )
+            keywords = resp.get("message", {}).get("content", "").strip()
+            print (f"Keywords: {keywords}")
+            return keywords if keywords else text
+        except Exception as e:
+            print(f"[提取失败] 退回原话搜索. Error: {e}")
+            return text
 
     async def chat_reply(self, message:str, hst:list[dict], iscalled: bool, image_b64: str = None) -> str:
         msgs = list(hst)
         if msgs and msgs[-1]["role"] == "user":
             content = msgs[-1]["content"]
+            raw = re.sub(r"<@!?\d+>", "", content).strip()
+            refined = await self.extract_keywords(raw)
+            archive_content = await self.db.search_relevant_archive(message.author.id, refined)
+            if archive_content:
+                content = f"[背景事实：说话者曾有黑历史 '{archive_content}']\n" + content
             if not iscalled:
-                content = f"[系统提示：该讯息没有提及你。]" + content
+                content = f"[系统提示：该讯息没有提及你。]\n" + content
             title = self.db.get_noble(message.author.id)
-            archive_data = self.db.get_latest_archive(message.author.id)
-            archive, archive_link = archive_data if archive_data else (None, None)
             rating = self.db.affection_lookup_or_init(message.author.id)
-            content = f"[你对说话者的好感为：{rating}]" + content
+            content = f"[你对说话者的好感为：{rating}]\n" + content
             if title:
-                content = f"[说话者爵位：{title}]" + content
+                content = f"[说话者爵位：{title}]\n" + content
             else:
-                content = f"[说话者并无爵位。]" + content
-            if archive:
-                if archive_link:
-                    content = f"[背景事实：说话者曾有黑历史 '{archive}'，证据：{archive_link}]\n" + content
-                else:
-                    content = f"[背景事实：说话者曾有黑历史 '{archive}']\n" + content
+                content = f"[说话者并无爵位。]\n" + content
             other_mentions = [m for m in message.mentions if not m.bot and m.id != message.author.id]
             if other_mentions:
                 for m in other_mentions:
                     title = self.db.get_noble(m.id)
-                    archive_data = self.db.get_latest_archive(m.id)
-                    archive, archive_link = archive_data if archive_data else (None, None)
+                    archive_content = await self.db.search_relevant_archive(m.id, refined)
+                    if archive_content:
+                        content = f"[背景事实：被提及者{m.display_name}曾有黑历史 '{archive_content}']\n" + content
                     rating = self.db.affection_lookup_or_init(m.id)
-                    content = f"[你对被提及者{m.display_name}的好感为]：{rating}" + content
+                    content = f"[你对被提及者{m.display_name}的好感为：{rating}]\n" + content
                     if title:
-                        content = f"[被提及者{m.display_name}爵位：{title}]" + content
+                        content = f"[被提及者{m.display_name}爵位：{title}]\n" + content
                     else:
-                        content = f"[被提及者{m.display_name}并无爵位。]" + content
-                    if archive:
-                        if archive_link:
-                            content = f"[背景事实：被提及者{m.display_name}曾有黑历史 '{archive}'，证据：{archive_link}]\n" + content
-                        else:
-                            content = f"[背景事实：被提及者{m.display_name}曾有黑历史 '{archive}']\n" + content
+                        content = f"[被提及者{m.display_name}并无爵位。]\n" + content
+
             if message.author.id == Config.OWNER_ID:
                 content = self.OWNER_CONTEXT + content
             current_msg = {"role": "user", "content": f"[当前] {content}"}
