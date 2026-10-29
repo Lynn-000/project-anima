@@ -15,6 +15,8 @@ I strongly recommend you to check the Modelfile and create a new persona while a
 - 🧠 **Hybrid Memory Architecture 混合记忆架构**
   - **Vector Search (sqlite-vec)**: Dynamic semantic memory retrieval using `sqlite-vec` and `nomic-embed-text`. Query rewriting extracts keywords for highly accurate KNN searches.
   - **语义检索 (sqlite-vec)**: 基于 `sqlite-vec` 和 `nomic-embed-text` 的动态语义记忆检索，自动提取关键词进行高精度 KNN 搜索。
+  - **Dynamic Media Routing**: Supports contextual GIF dispatch. The LLM is prompted to output specific gif tags (e.g., <gif>happy</gif>), which the bot parses to retrieve and send appropriate media assets from the local database, with a graceful None fallback if no match is found.
+  支持发送GIF。AI会输出特定gif标签（例如：<gif>开心</gif>）,然后进行语义检索，在本地数据库查找带有相近描述的gif并发送该gif的链接。如果没有找到适合的gif, AI不会发送任何gif。
 
 - ❤️ **Dynamic Affection System 动态好感度系统**
   - Extracts hidden tags (e.g., `<affectionate> x </affectionate>`) to dynamically adjust the AI's attitude and tone in real-time. Features anti-farming and overflow protection.
@@ -41,7 +43,7 @@ I strongly recommend you to check the Modelfile and create a new persona while a
 - **Language**: Python 3.10+
 - **Core**: `discord.py` (Asyncio)
 - **LLM Engine**: [Ollama](https://ollama.com/)
-- **Database**: `sqlite3`
+- **Database**: `sqlite3`, `sqlite-vec`
 - **Audio**: `FFmpeg`
 
 ## 🚀 Quick Start 快速开始

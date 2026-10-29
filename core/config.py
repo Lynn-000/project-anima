@@ -18,4 +18,4 @@ class Config:
     NICKNAMES = ["CUSTOM"]
     COOLDOWN_SECONDS = 10
     AFFECTION_DEBUG = re.compile(r"^(查好感)\s+<@!?(\d+)>$")
-    PLAY_PATTERN = re.compile(r"^播放\s+(.+)$")
+    GIF_STORE_PATTERN = re.compile(r"^存\s+(https?://\S+)\s+(.+)$")

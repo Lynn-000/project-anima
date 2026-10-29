@@ -4,6 +4,7 @@ import base64
 import time
 import re
 from collections import deque
+import asyncio
 class ChatCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -22,7 +23,7 @@ class ChatCog(commands.Cog):
         for m in (f"<@{self.bot.user.id}>", f"<@!{self.bot.user.id}>"):
             content = content.replace(m, "", 1)
         bvmatch = re.search(r"(播放)\s+(?:https?://\S*)?BV([0-9A-Za-z]{10})", message.content)
-        if self.bot.config.CMD_PATTERN.match(content) or self.bot.config.NOBILITY_PATTERN.match(content) or self.bot.config.ARCHIVE_PATTERN.match(content) or self.bot.config.CYCLE_PATTERN.match(content) or self.bot.config.AFFECTION_DEBUG.match(content) or bvmatch:
+        if self.bot.config.CMD_PATTERN.match(content) or self.bot.config.NOBILITY_PATTERN.match(content) or self.bot.config.ARCHIVE_PATTERN.match(content) or self.bot.config.CYCLE_PATTERN.match(content) or self.bot.config.AFFECTION_DEBUG.match(content) or self.bot.config.GIF_STORE_PATTERN.match(content) or bvmatch:
             return
         hist = self.HISTORY.setdefault(message.channel.id, deque(maxlen=10))
         hist_content = content
@@ -51,9 +52,18 @@ class ChatCog(commands.Cog):
             change = max(-10, min(10, change))
             self.bot.db.change_affection_rating(message.author.id, change)
         reply = re.sub(r"<affectionate>.*?</affectionate>", "", reply).strip()
+        gif_match = re.search(r"<gif>(.*?)</gif>", reply, re.DOTALL)
+        gif_url = None
+        if gif_match:
+            gif_query = gif_match.group(1).strip()
+            gif_url = await self.bot.db.search_gif(gif_query)
+            reply = re.sub(r"<gif>.*?</gif>", "", reply, flags=re.DOTALL).strip()
         reply = self.bot.llm.strip_markers(reply)
-        await message.reply(reply)
-        hist.append({"role": "assistant", "content": reply})
+        if reply:
+            await message.reply(reply)
+            hist.append({"role": "assistant", "content": reply})
+        if gif_url:
+            await message.channel.send(gif_url)
         print(f"DEBUG - Current History: {list(hist)}") 
         
         return

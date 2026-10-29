@@ -21,6 +21,7 @@ class Database:
         self.owner_id = str(owner_id)
 
     def _init_tables(self):
+        self.conn.execute("PRAGMA journal_mode=WAL;")
         self.conn.execute("""
             CREATE TABLE IF NOT EXISTS noble (
                 uid TEXT PRIMARY KEY,
@@ -47,6 +48,10 @@ class Database:
                 embedding float[768]
             )
         """)
+        self.conn.execute("""
+            CREATE TABLE IF NOT EXISTS gif(id INTEGER PRIMARY KEY AUTOINCREMENT, description TEXT, url TEXT)
+        """)
+        self.conn.execute("""CREATE VIRTUAL TABLE IF NOT EXISTS gif_vectors USING vec0(embedding float[768])""")
         self.conn.commit()
         pass
 
@@ -138,8 +143,60 @@ class Database:
             """, (serialize_float32(query_vector), str(uid))).fetchone()
             if result:
                 print(f"[DEBUG] 向量搜索匹配到: '{result[0]}', 距离: {result[1]:.4f}")
-            return result[0] if result else None
+            return result[0] if result and result[1] < 0.85 else None
         except Exception as e:
             print(f"Vector Search Error: {e}")
+            return None
+    async def add_gif(self, description: str, url: str) -> bool:
+        try:
+            cursor = self.conn.execute(
+                "INSERT INTO gif (description, url) VALUES (?,?)",
+                (description, url)
+            )
+            gif_id = cursor.lastrowid
+
+            response = await asyncio.to_thread(
+                self.embed_client.embed,
+                model=self.embed_model,
+                input=description
+            )
+            vector = response['embeddings'][0]
+            
+            self.conn.execute(
+                "INSERT INTO gif_vectors (rowid, embedding) VALUES (?, ?)",
+                (gif_id, serialize_float32(vector))
+            )
+            self.conn.commit()
+            return True
+        except Exception as e:
+            print(f"Database Add GIF Error. {e}")
+            self.conn.rollback()
+            return False
+    async def search_gif(self, query_desc: str) -> str | None:
+        try:
+            response = await asyncio.to_thread(
+                self.embed_client.embed, 
+                model=self.embed_model, 
+                input=query_desc
+            )
+            query_vector = response['embeddings'][0]
+            result = self.conn.execute("""
+                SELECT g.url, v.distance
+                FROM (
+                    SELECT rowid, distance
+                    FROM gif_vectors
+                    WHERE embedding MATCH ? AND k = 100 
+                ) v
+                JOIN gif g ON v.rowid = g.id
+                WHERE v.distance < 0.7
+                ORDER BY v.distance
+                LIMIT 1
+            """, (serialize_float32(query_vector),)).fetchone()
+            if result:
+                print(f"[DEBUG] GIF搜索匹配到: '{result[0]}', 距离: {result[1]:.4f}")
+                return result[0]
+            return None
+        except Exception as e:
+            print(f"GIF Search Error: {e}")
             return None
     
