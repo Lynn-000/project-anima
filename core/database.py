@@ -8,14 +8,14 @@ import asyncio
 class Database:
     def __init__(self, owner_id):
         base_dir = Path(__file__).resolve().parent.parent
-        db_path = base_dir/"sakiko.db"
+        db_path = base_dir/"anima.db"
         self.conn = sqlite3.connect(str(db_path),check_same_thread = False)
 
         self.conn.enable_load_extension(True)
         sqlite_vec.load(self.conn)
         self.conn.enable_load_extension(False)
-        self.embed_client = ollama.Client(host="http://localhost:11434")
-        self.embed_model = "nomic-embed-text"
+        self.embed_client = ollama.AsyncClient(host="http://localhost:11434")
+        self.embed_model = "bge-m3"
 
         self._init_tables()
         self.owner_id = str(owner_id)
@@ -45,13 +45,13 @@ class Database:
         """)
         self.conn.execute("""
             CREATE VIRTUAL TABLE IF NOT EXISTS archive_vectors USING vec0(
-                embedding float[768]
+                embedding float[1024]
             )
         """)
         self.conn.execute("""
             CREATE TABLE IF NOT EXISTS gif(id INTEGER PRIMARY KEY AUTOINCREMENT, description TEXT, url TEXT)
         """)
-        self.conn.execute("""CREATE VIRTUAL TABLE IF NOT EXISTS gif_vectors USING vec0(embedding float[768])""")
+        self.conn.execute("""CREATE VIRTUAL TABLE IF NOT EXISTS gif_vectors USING vec0(embedding float[1024])""")
         self.conn.commit()
         pass
 
@@ -77,8 +77,7 @@ class Database:
             cursor = self.conn.execute("INSERT INTO archive (uid, content, link, created_at) VALUES (?,?,?,?)",(str(uid), content, link, created_at))
             archive_id = cursor.lastrowid
             
-            response = await asyncio.to_thread(
-                self.embed_client.embed,
+            response = await self.embed_client.embed(
                 model=self.embed_model,
                 input=vector_text
             )
@@ -124,8 +123,7 @@ class Database:
 
     async def search_relevant_archive(self, uid: str, current_text: str) -> str | None:
         try:
-            response = await asyncio.to_thread(
-                self.embed_client.embed, 
+            response = await self.embed_client.embed(
                 model=self.embed_model, 
                 input=current_text
             )
@@ -155,8 +153,7 @@ class Database:
             )
             gif_id = cursor.lastrowid
 
-            response = await asyncio.to_thread(
-                self.embed_client.embed,
+            response = await self.embed_client.embed(
                 model=self.embed_model,
                 input=description
             )
@@ -174,14 +171,13 @@ class Database:
             return False
     async def search_gif(self, query_desc: str) -> str | None:
         try:
-            response = await asyncio.to_thread(
-                self.embed_client.embed, 
+            response = await self.embed_client.embed(
                 model=self.embed_model, 
                 input=query_desc
             )
             query_vector = response['embeddings'][0]
             result = self.conn.execute("""
-                SELECT g.url, v.distance
+                SELECT g.url, v.distance, g.description
                 FROM (
                     SELECT rowid, distance
                     FROM gif_vectors
@@ -193,7 +189,7 @@ class Database:
                 LIMIT 1
             """, (serialize_float32(query_vector),)).fetchone()
             if result:
-                print(f"[DEBUG] GIF搜索匹配到: '{result[0]}', 距离: {result[1]:.4f}")
+                print(f"[DEBUG] GIF搜索匹配到: '{result[0]}', 距离: {result[1]:.4f}，描述：{result[2]}")
                 return result[0]
             return None
         except Exception as e:

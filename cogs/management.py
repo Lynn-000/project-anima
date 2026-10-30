@@ -31,7 +31,7 @@ class ManagementCog(commands.Cog):
                 await message.reply("所指非人。")
                 return
             if message.author.id != self.bot.config.OWNER_ID:
-                await message.reply("僭号裂土，罪该万死。")
+                await message.reply("你无权使用此指令。")
                 return
             granted_by = message.author.id
             if not title:
@@ -65,8 +65,6 @@ class ManagementCog(commands.Cog):
             await message.reply(f"**诏**\n{edict}")
             return
         elif gif_match:
-            if message.author.id != self.bot.config.OWNER_ID:
-                await message.reply("基于安全理由，只能由群主存表情包。")
             url = gif_match.group(1).strip()
             description = gif_match.group(2).strip()
             if not description:

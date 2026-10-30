@@ -6,16 +6,16 @@ class LLMS:
     def __init__(self, db):
         self.client = ollama.AsyncClient(host="http://localhost:11434")
         self.db = db
-        self.CHAT_MODEL = "sakiko-bot"
-        self.EDICT_MODEL = "sakiko-bot"
+        self.CHAT_MODEL = "anima-bot"
+        self.EDICT_MODEL = "anima-bot"
         self._edict_lock = asyncio.Lock() 
-        self.DISTILLED_MODEL = "sakiko-bot"
+        self.DISTILLED_MODEL = "anima-bot"
         self.DISTILLED_CONTEXT = """
         你是丰川祥子的大脑。提取核心意图，只输出2-3个词汇，用空格隔开。
         过滤无意义的连接词。不要胡编乱造。如果没有提及人物，不要擅自加入人物。
         酌情过滤部分无意义提示词，比如查找，告诉我，今天。
         允许酌量进行关联，比如数学关联到算术，算数，算术关联到算式。禁止滑坡。
-        **如果输入中包含 [xxx] 这样的系统标记（比如 [发送了一张图片]、[星璇]），请直接忽略它们，不要把它们当作提取内容。**
+        **如果输入中包含 [xxx] 这样的系统标记（比如 [发送了一张图片]、[<owner_name>]），请直接忽略它们，不要把它们当作提取内容。**
         例如：
         用户输入：查找 xd 数学成绩
         你的输出：算错数 数学 算术 数学题

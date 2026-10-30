@@ -56,6 +56,7 @@ class ChatCog(commands.Cog):
         gif_url = None
         if gif_match:
             gif_query = gif_match.group(1).strip()
+            print(f"模型生成的GIF词: '{gif_match.group(1).strip()}'")
             gif_url = await self.bot.db.search_gif(gif_query)
             reply = re.sub(r"<gif>.*?</gif>", "", reply, flags=re.DOTALL).strip()
         reply = self.bot.llm.strip_markers(reply)

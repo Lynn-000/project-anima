@@ -1,1 +1,1 @@
-python main.py
+C:\Users\Archbouncer\AppData\Local\Programs\Python\Python310\python.exe main.py

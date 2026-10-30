@@ -15,7 +15,7 @@ class Config:
     NOBILITY_PATTERN = re.compile(r"(封)\s+<@!?(\d+)>\s+(.+)$")
     ARCHIVE_PATTERN = re.compile(r"^(记)\s+<@!?(\d+)>\s*(.+)$")
     CYCLE_PATTERN = re.compile(r"(单曲|列表|无)$")
-    NICKNAMES = ["CUSTOM"]
+    NICKNAMES = []
     COOLDOWN_SECONDS = 10
     AFFECTION_DEBUG = re.compile(r"^(查好感)\s+<@!?(\d+)>$")
     GIF_STORE_PATTERN = re.compile(r"^存\s+(https?://\S+)\s+(.+)$")
